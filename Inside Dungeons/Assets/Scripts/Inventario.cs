@@ -1,7 +1,6 @@
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
-using static UnityEditor.Progress;
 
 public class Inventario : MonoBehaviour
 {
@@ -16,7 +15,7 @@ public class Inventario : MonoBehaviour
     private GameObject[] slot;
 
     public GameObject slotHolder;
-    //public GameObject slotHolderExtra;
+    /*public GameObject slotHolderExtra;
     public GameObject goldtxt;
 
     public GameObject SlotHolderBody;
@@ -24,7 +23,7 @@ public class Inventario : MonoBehaviour
     public GameObject slotTorso;
     public GameObject slotPantalon;
     public GameObject slotZapatos;
-    public GameObject[] slotsManos;
+    public GameObject[] slotsManos;*/
 
 
 
@@ -48,7 +47,7 @@ public class Inventario : MonoBehaviour
             }
         }
 
-        slotsManos = new GameObject[2];
+        /*slotsManos = new GameObject[2];
 
         if (slotCabeza.GetComponent<Slot>().item == null)
         {
@@ -73,7 +72,7 @@ public class Inventario : MonoBehaviour
         if (slotsManos[1].GetComponent<Slot>().item == null)
         {
             slotsManos[1].GetComponent<Slot>().empty = true;
-        }
+        }*/
     }
 
     void Update()
