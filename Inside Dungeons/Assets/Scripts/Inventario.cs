@@ -1,6 +1,8 @@
+using System;
 using System.Collections;
 using System.Collections.Generic;
 using UnityEngine;
+using UnityEngine.UI;
 
 public class Inventario : MonoBehaviour
 {
@@ -12,18 +14,31 @@ public class Inventario : MonoBehaviour
 
     private int enabledSlots;
 
-    private GameObject[] slot;
-
+    private Slot[] slots;
     public GameObject slotHolder;
-    /*public GameObject slotHolderExtra;
-    public GameObject goldtxt;
 
-    public GameObject SlotHolderBody;
-    public GameObject slotCabeza;
-    public GameObject slotTorso;
-    public GameObject slotPantalon;
-    public GameObject slotZapatos;
-    public GameObject[] slotsManos;*/
+    private int slotsBody = 6;
+    private Slot[] slotBody;
+    public GameObject slotHolderBody;
+
+
+    public int goldcount;
+    public Text goldtxt;
+
+    public Slot slotCabeza;
+    public Slot slotTorso;
+    public Slot slotPantalon;
+    public Slot slotZapatos;
+    public Slot slotManoIz;
+    public Slot slotManoDe;
+
+    public Slot slotuno;
+    public Slot slotdos;
+    public Slot slottres;
+    public Slot slotcuatro;
+    public Slot slotcinco;
+    public Slot slotseis;
+    public Slot slotsiete;
 
 
 
@@ -31,50 +46,42 @@ public class Inventario : MonoBehaviour
     void Start()
     {
         inventario.SetActive(false);
-
-        slot = new GameObject[allSlots];
-        IsEmty();
+        goldcount = 0;
+        UpdateGoldTxt();
+        slots = new Slot[allSlots];
+        slotBody = new Slot[slotsBody];
+        startInventory();
 
     }
-    void IsEmty()
+    void startInventory()
     {
-        for (int i = 0; i < allSlots; i++)
+        slots[0]= slotuno;
+        slots[1]= slotdos;
+        slots[2]= slottres;
+        slots[3]= slotcuatro;
+        slots[4]= slotcinco;
+        slots[5]= slotseis;
+        slots[6]= slotsiete;
+
+        slotBody[0] = slotCabeza;
+        slotBody[1] = slotTorso;
+        slotBody[2] = slotPantalon;
+        slotBody[3] = slotZapatos;
+        slotBody[4] = slotManoIz;
+        slotBody[5] = slotManoDe;
+
+        for (int i = 0; i < slots.Length; i++)
         {
-            slot[i] = slotHolder.transform.GetChild(i).gameObject;
-            if (slot[i].GetComponent<Slot>().item == null)
-            {
-                slot[i].GetComponent<Slot>().empty = true;
-            }
+            slots[i].empty = true;
+            
+}
+        for (int i = 0; i < slotBody.Length; i++)
+        {
+            slotBody[i].empty = true;
         }
 
-        /*slotsManos = new GameObject[2];
 
-        if (slotCabeza.GetComponent<Slot>().item == null)
-        {
-            slotCabeza.GetComponent<Slot>().empty = true;
-        }
-        if (slotTorso.GetComponent<Slot>().item == null)
-        {
-            slotTorso.GetComponent<Slot>().empty = true;
-        }
-        if (slotPantalon.GetComponent<Slot>().item == null)
-        {
-            slotPantalon.GetComponent<Slot>().empty = true;
-        }
-        if (slotZapatos.GetComponent<Slot>().item == null)
-        {
-            slotZapatos.GetComponent<Slot>().empty = true;
-        }
-        if (slotsManos[0].GetComponent<Slot>().item == null)
-        {
-            slotsManos[0].GetComponent<Slot>().empty = true;
-        }
-        if (slotsManos[1].GetComponent<Slot>().item == null)
-        {
-            slotsManos[1].GetComponent<Slot>().empty = true;
-        }*/
     }
-
     void Update()
     {
         InventarioActivacion();
@@ -101,33 +108,67 @@ public class Inventario : MonoBehaviour
         {
             GameObject itemPickedUp = other.gameObject;
             Item item = itemPickedUp.GetComponent<Item>();
-            AddItem(itemPickedUp,item.Id,item.type,item.description,item.icon,item.price,item.sum);
+            AddItem(item);
+            Destroy(itemPickedUp);
         }
     }
-    public void AddItem(GameObject itemObject, int itemId, string itemType, string itemDescription, Sprite itemSprite, int itemPrice, int itemSum) 
+
+    public void EquipItem(Item item, Slot slot)
     {
-        for (int i = 0; i < allSlots; i++)
+        for (int i = 0; i < slotBody.Length; i++)
         {
-            if (slot[i].GetComponent<Slot>().empty)
+            if (slotBody[i].empty && slotBody[i].type == item.type)
             {
-                itemObject.GetComponent<Item>().pickedUp = true;
-                slot[i].GetComponent<Slot>().item = itemObject;
-                slot[i].GetComponent<Slot>().Id = itemId;
-                slot[i].GetComponent<Slot>().type = itemType;
-                slot[i].GetComponent<Slot>().description = itemDescription;
-                slot[i].GetComponent<Slot>().icon = itemSprite;
-                slot[i].GetComponent<Slot>().price = itemPrice;
-                slot[i].GetComponent<Slot>().price = itemSum;
-
-                itemObject.transform.parent= slot[i].transform;
-                itemObject.SetActive(false);
-
-                slot[i].GetComponent<Slot>().UpdateSlot();
-
-                slot[i].GetComponent<Slot>().empty= false;
+                slotBody[i].EquipItem(item);
+                slot.UnequipItem();
+                slotBody[i].GetComponent<Slot>().UpdateSlot();
+                RemoveItem(slot);
+                break;
             }
-            return;
         }
+    }
+    public void DesequipItem(Item item, Slot slot)
+    {
+
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i].empty)
+            {
+                slots[i].EquipItem(item);
+                slot.UnequipItem();
+                slots[i].GetComponent<Slot>().UpdateSlot();
+                RemoveItem(slot);
+                break;
+            }
+        }
+    }
+    public void AddItem(Item item)
+    {
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i].empty)
+            {
+                item.GetComponent<Item>().pickedUp = true;
+                slots[i].EquipItem(item);
+                slots[i].GetComponent<Slot>().UpdateSlot();
+                break;
+            }
+        }
+    }
+
+    public void RemoveItem(Slot slot)
+    {
+        slot.UnequipItem();
+    }
+
+    public void SumGold(int sum)
+    {
+        goldcount = goldcount + sum;
+        UpdateGoldTxt();
+    }
+    public void UpdateGoldTxt()
+    {
+        goldtxt.text = goldcount.ToString();
     }
 
 }

@@ -102,7 +102,6 @@ public class ControladorMenu : MonoBehaviourPunCallbacks, ILobbyCallbacks
         {
             txtListaJugadores.text += p.NickName + "\n";
         }
-        //txtCodigoSala.text = string.Format(PhotonNetwork.CurrentRoom.Name);
         
     }
 
