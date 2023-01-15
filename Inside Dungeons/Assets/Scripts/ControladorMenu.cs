@@ -34,8 +34,8 @@ public class ControladorMenu : MonoBehaviourPunCallbacks, ILobbyCallbacks
     [Header("Lobby")]
     [SerializeField] private Button btnEmpezar;
     [SerializeField] private Button btnCancelar;
-    [SerializeField] private TextMeshProUGUI txtListaJugadores;
-    [SerializeField] private TextMeshProUGUI txtCodigoSala;
+    [SerializeField] private Text txtListaJugadores;
+    [SerializeField] private Text txtCodigoSala;
 
     private List<GameObject> roomElementos = new List<GameObject>();
     private List<RoomInfo> listaRooms = new List<RoomInfo>();
@@ -98,7 +98,7 @@ public class ControladorMenu : MonoBehaviourPunCallbacks, ILobbyCallbacks
     {
         btnEmpezar.interactable = PhotonNetwork.IsMasterClient;
         txtListaJugadores.text = "";
-        foreach (Player p in PhotonNetwork.PlayerList)
+        foreach (PhotonPlayer p in PhotonNetwork.PlayerList)
         {
             txtListaJugadores.text += p.NickName + "\n";
         }
@@ -164,7 +164,11 @@ public class ControladorMenu : MonoBehaviourPunCallbacks, ILobbyCallbacks
 
     public void OnEmpezarClcked()
     {
-        PhotonNetwork.LoadLevel("Game");
+        if (PhotonNetwork.PlayerList.Length>=1)
+        {
+            PhotonNetwork.LoadLevel("Game");
+        }
+        //Borrar sala en la lista
     }
 
 }

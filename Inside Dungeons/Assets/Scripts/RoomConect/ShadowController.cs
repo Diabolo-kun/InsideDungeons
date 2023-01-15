@@ -8,11 +8,9 @@ public class ShadowController : MonoBehaviour
 {
     Rigidbody rb;
     PhotonView PV;
+    RoomBehaviour RB;
 
     private NetworkManager net;
-    private bool escActive;
-    public GameObject exitmenu;
-    public Button btnexit;
 
     void Awake()
     {
@@ -21,8 +19,6 @@ public class ShadowController : MonoBehaviour
     }
     void Start()
     {
-        exitmenu.SetActive(false);
-        btnexit.onClick.AddListener(Salir);
         if (!PV.IsMine)
         {
             Destroy(GetComponentInChildren<Camera>().gameObject);
@@ -38,26 +34,8 @@ public class ShadowController : MonoBehaviour
     void Update()
     {
         if (!PV.IsMine) return;
-        ESCActivacion();
     }
-    void ESCActivacion()
-    {
-        if (Input.GetKeyDown(KeyCode.Escape))
-        {
-            escActive = !escActive;
-        }
-        if (escActive == true)
-        {
-            exitmenu.SetActive(true);
-        }
-        if (escActive == false)
-        {
-            exitmenu.SetActive(false);
-        }
-    }
-    void Salir()
-    {
-        net.DejarRoom();
-    }
+
+    
     
 }

@@ -47,14 +47,14 @@ public class NetworkManager : MonoBehaviourPunCallbacks
         {
             //ID más bajo =nuevo room master
             int newMasterClientId = int.MaxValue;
-            foreach (Photon.Realtime.Player player in PhotonNetwork.PlayerList)
+            foreach (Photon.Realtime.PhotonPlayer player in PhotonNetwork.PlayerList)
             {
                 if (player.ActorNumber < newMasterClientId)
                 {
                     newMasterClientId = player.ActorNumber;
                 }
             }
-            Photon.Realtime.Player newMasterClient = PhotonNetwork.CurrentRoom.GetPlayer(newMasterClientId);
+            Photon.Realtime.PhotonPlayer newMasterClient = PhotonNetwork.CurrentRoom.GetPlayer(newMasterClientId);
 
 
             // Transferimos el control de la sala al nuevo room master
