@@ -11,6 +11,7 @@ public class Inventario : MonoBehaviour
     private bool inventarioActivo;
 
     public GameObject inventario;
+    public PhotonView PV;
 
     private int allSlots= 7;
     private Slot[] slots;
@@ -49,14 +50,16 @@ public class Inventario : MonoBehaviour
     public Button btnexit;
 
     public bool win = false;
-
+    public SpriteDataBase SpriteDB;
 
 
     void Start()
     {
-
+        win= false;
         exitmenu.SetActive(false);
         btnexit.onClick.AddListener(Salir);
+        PV = GetComponent<PhotonView>();
+        SpriteDB = new SpriteDataBase();
 
         inventario.SetActive(false);
         goldcount = 0;
@@ -83,12 +86,14 @@ public class Inventario : MonoBehaviour
         {
 
             slots[i].empty = true;
+            slots[i].SyncSlot = -1;
 
 
         }
         for (int i = 0; i < slotBody.Length; i++)
         {
             slotBody[i].empty = true;
+            slotBody[i].SyncSlot = -1;
         }
         ContarStats();
 
@@ -99,6 +104,7 @@ public class Inventario : MonoBehaviour
     }
     public void ContarStats()
     {
+        if (!PV.IsMine) return;
         infoStats.text = "";
         sumatorio = 0;
         if (!slotBody[0].empty)
@@ -141,11 +147,32 @@ public class Inventario : MonoBehaviour
 
         infoStats.text = infoStats.text + "Gold Points= " + goldcount/3 + " \n";
 
+        PV.RPC("RPC_UpdateInfo", RpcTarget.AllBuffered, infoStats.text);
+
+    }
+    [PunRPC]
+    public void RPC_UpdateInfo(string info)
+    {
+        if (PV.IsMine)
+        {
+            infoStats.text = info;
+        }
     }
     public void NivelUp()
     {
+        if (!PV.IsMine) return;
         nivel++;
+        PV.RPC("RPC_UpdateNivel",RpcTarget.AllBuffered,nivel);
     }
+    [PunRPC]
+    public void RPC_UpdateNivel(int nivel)
+    {
+        if (PV.IsMine)
+        {
+            this.nivel = nivel;
+        }
+    }
+
     void Salir()
     {
         if (PhotonNetwork.InRoom)
@@ -188,74 +215,116 @@ public class Inventario : MonoBehaviour
     {
         if (other.tag=="Item")
         {
+            if (PV.IsMine)
+            {
+                GameObject itemPickedUp = other.gameObject;
+                Item item = itemPickedUp.GetComponent<Item>();
+                AddToInventory(item);
+                Destroy(itemPickedUp);
+            }
+            else
+            {
+                Destroy(other.gameObject);
+            }
+                
             
-            GameObject itemPickedUp = other.gameObject;
-            Item item = itemPickedUp.GetComponent<Item>();
-            Debug.Log("Get "+item);
-            AddItem( item.Id, item.type, item.description, item.icon, item.price, item.sum);
-
-            Destroy(itemPickedUp);
+            
         }
         if (other.tag=="Enemy")
         {
-            GameObject enemy = other.gameObject;
-            int hp = enemy.GetComponent<Enemy>().Hp;
-            if (damage > hp) { NivelUp(); Destroy(enemy); } else { alive=false; }
+            if (PV.IsMine)
+            {
+                GameObject enemy = other.gameObject;
+                int hp = enemy.GetComponent<Enemy>().Hp;
+                if (damage > hp) { NivelUp(); Destroy(enemy); } else { alive = false; Destroy(enemy); }
+            }
+            else
+            {
+                Destroy(other.gameObject);
+            }
         }
     }
+    [PunRPC]
+    public void AddToInventory(Item item)
+    {
+        Debug.Log(item);
+        if (PV.IsMine)
+        {
+            for (int i = 0; i < slots.Length; i++)
+            {
+                if (slots[i].empty)
+                {
+
+                    Sprite icon = SpriteDB.getSpriteByID(item.Id);
+                    slots[i].EquipItem(item.Id, item.type, item.description, icon, item.price, item.sum);
+                    slots[i].GetComponent<Slot>().UpdateSlot();
+                    break;
+                }
+            }
+        }
+        
+    }
+
+    [PunRPC]
+    public void RPC_EquipItem(int slotIndex, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
+    {
+        slotBody[slotIndex].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
+        slotBody[slotIndex].GetComponent<Slot>().UpdateSlot();
+        ContarStats();
+    }
+
     public void EquipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
+        if (!PV.IsMine) return;
+
         for (int i = 0; i < slotBody.Length; i++)
         {
             if (slotBody[i].empty && slotBody[i].type == typeIn)
             {
-                slotBody[i].EquipItem(slot.Id, slot.type, slot.description, slot.icon, slot.price, slot.sum);
                 slot.UnequipItem();
-                slotBody[i].GetComponent<Slot>().UpdateSlot();
-                RemoveItem(slot);
+
+                PV.RPC("RPC_EquipItem", RpcTarget.All, i, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
+                break;
+            }
+        }
+    }
+
+    [PunRPC]
+    public void RPC_DesequipItem(int slotIndex, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
+    {
+        for (int i = 0; i < slots.Length; i++)
+        {
+            if (slots[i].empty)
+            {
+                slots[i].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
+                slots[i].GetComponent<Slot>().UpdateSlot();
                 ContarStats();
                 break;
             }
         }
     }
+
     public void DesequipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
+        if (!PV.IsMine) return;
 
-        for (int i = 0; i < slots.Length; i++)
-        {
-            if (slots[i].empty)
-            {
-                slots[i].EquipItem(slot.Id, slot.type, slot.description, slot.icon, slot.price, slot.sum);
-                slot.UnequipItem();
-                slots[i].GetComponent<Slot>().UpdateSlot();
-                RemoveItem(slot);
-                ContarStats();
+        PV.RPC("RPC_DesequipItem", RpcTarget.All, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
 
-                break;
-            }
-        }
-    }
-    public void AddItem(int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
-    {
-        for (int i = 0; i < slots.Length; i++)
-        {
-            if (slots[i].empty)
-            {
-                slots[i].EquipItem(IdIn, typeIn,  descripIn,  iconIn,  priceIn,  sumIn);
-                slots[i].GetComponent<Slot>().UpdateSlot();
-                break;
-            }
-        }
-    }
-    public void RemoveItem(Slot slot)
-    {
         slot.UnequipItem();
     }
-    public void SumGold(int sum)
+
+
+    public void SumGold(int price)
     {
-        goldcount = goldcount + sum;
-        UpdateGoldTxt();
+        goldcount += price;
+        PV.RPC("RPC_UpdateGoldTxt",RpcTarget.All,goldcount);
         ContarStats();
+    }
+    [PunRPC]
+    public void RPC_UpdateGoldCount(int newGoldCount)
+    {
+        goldcount = newGoldCount;
+        UpdateGoldTxt();
     }
     public void UpdateGoldTxt()
     {

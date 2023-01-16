@@ -157,18 +157,17 @@ public class ControladorMenu : MonoBehaviourPunCallbacks, ILobbyCallbacks
 
     public void OnCancelarClicked()
     {
-        ActualizarLobby();
         NetworkManager.instancia.DejarRoom();
-        SetPantalla(Principal);
+        ActualizarLobby();
+        Application.Quit();
     }
 
     public void OnEmpezarClcked()
     {
-        if (PhotonNetwork.PlayerList.Length>=1)
+        if (PhotonNetwork.PlayerList.Length>=2)
         {
             PhotonNetwork.LoadLevel("Game");
         }
-        //Borrar sala en la lista
     }
 
 }

@@ -7,7 +7,7 @@ public class Item : MonoBehaviour
     public int Id;
     public string type;
     public string description;
-    public Sprite icon;
+    public string icon;
     public int price;
     public int sum;
 

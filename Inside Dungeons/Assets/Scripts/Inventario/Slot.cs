@@ -1,3 +1,4 @@
+using Photon.Pun;
 using UnityEngine;
 using UnityEngine.EventSystems;
 using UnityEngine.UI;
@@ -25,6 +26,9 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
 
     public Inventario inventario;
     public bool body;
+
+    public int SyncSlot = -1; // nueva variable para sincronizar el slot en el juego multijugador
+    public PhotonView PV;
 
     private void Start()
     {
@@ -85,12 +89,44 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         sum = sumIn;
         empty = false;
 
-
+        if (PV.IsMine)
+        {
+            PV.RPC("RPC_EquipItem", RpcTarget.All, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
+        }
+    }
+    [PunRPC]
+    private void RPC_EquipItem(int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
+    {
+        Id = IdIn;
+        type = typeIn;
+        description = descripIn;
+        icon = iconIn;
+        price = priceIn;
+        sum = sumIn;
+        empty = false;
+        UpdateSlot();
     }
     public void UnequipItem()
     {
-        empty= true;
-
+        empty = true;
+        Id = 0;
+        if (!body)
+        {
+            type = null;
+        }
+        description = null;
+        SlotIconGameObject.GetComponent<Image>().sprite = Background;
+        price = 0;
+        sum = 0;
+        if (PV.IsMine)
+        {
+            PV.RPC("RPC_UnequipItem", RpcTarget.All);
+        }
+    }
+    [PunRPC]
+    public void RPC_UnequipItem()
+    {
+        empty = true;
         Id = 0;
         if (!body)
         {
@@ -101,7 +137,8 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         price = 0;
         sum = 0;
     }
-    
+
+
 
     void usar() 
     { 
@@ -114,9 +151,9 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
     void vender() {
 
         Slot slot = GetComponentInParent<Slot>();
-        int sum= slot.sum;
-        slot.inventario.SumGold(sum);
-        slot.inventario.RemoveItem(slot);
+        int price= slot.price;
+        slot.inventario.SumGold(price);
+        slot.UnequipItem();
         btnUse.gameObject.SetActive(false);
         btnSale.gameObject.SetActive(false);
     }
