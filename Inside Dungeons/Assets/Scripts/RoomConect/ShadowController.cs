@@ -28,6 +28,8 @@ public class ShadowController : MonoBehaviour
             script2.enabled = false;
             AimBehaviourBasic script3 = PV.GetComponent<AimBehaviourBasic>();
             script3.enabled = false;
+            Inventario script4= PV.GetComponent<Inventario>();
+            script4.enabled = false;
             
         }
     }

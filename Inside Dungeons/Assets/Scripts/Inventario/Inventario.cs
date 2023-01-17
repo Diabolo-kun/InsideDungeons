@@ -13,7 +13,7 @@ public class Inventario : MonoBehaviour
     public GameObject inventario;
     public PhotonView PV;
 
-    private int allSlots= 7;
+    private int allSlots = 7;
     private Slot[] slots;
     public GameObject slotHolder;
 
@@ -39,13 +39,13 @@ public class Inventario : MonoBehaviour
     public Slot slotseis;
     public Slot slotsiete;
 
-    public bool alive=true;
+    public bool alive = true;
     public Text infoStats;
     public int damage = 1;
     public int nivel = 1;
     public int sumatorio;
 
-    private bool esc=false;
+    private bool esc = false;
     public GameObject exitmenu;
     public Button btnexit;
 
@@ -55,7 +55,7 @@ public class Inventario : MonoBehaviour
 
     void Start()
     {
-        win= false;
+        win = false;
         exitmenu.SetActive(false);
         btnexit.onClick.AddListener(Salir);
         PV = GetComponent<PhotonView>();
@@ -109,18 +109,18 @@ public class Inventario : MonoBehaviour
         sumatorio = 0;
         if (!slotBody[0].empty)
         {
-            sumatorio= sumatorio +slotBody[0].sum;
-            infoStats.text = infoStats.text+ "Head= +" + slotBody[0].sum+"\n";
+            sumatorio = sumatorio + slotBody[0].sum;
+            infoStats.text = infoStats.text + "Head= +" + slotBody[0].sum + "\n";
         }
         if (!slotBody[1].empty)
         {
             sumatorio = sumatorio + slotBody[1].sum;
-            infoStats.text = infoStats.text+ "Armor= +" + slotBody[1].sum+"\n";
+            infoStats.text = infoStats.text + "Armor= +" + slotBody[1].sum + "\n";
         }
         if (!slotBody[2].empty)
         {
             sumatorio = sumatorio + slotBody[2].sum;
-            infoStats.text = infoStats.text+ "Pants= +" + slotBody[2].sum + "\n";
+            infoStats.text = infoStats.text + "Pants= +" + slotBody[2].sum + "\n";
         }
         if (!slotBody[3].empty)
         {
@@ -141,11 +141,11 @@ public class Inventario : MonoBehaviour
         {
             infoStats.text = "Nada equipado \n";
         }
-        infoStats.text = "\n"+infoStats.text+"Nivel= "+nivel+" \n";
-        damage = nivel + sumatorio+ goldcount/3;
-        infoStats.text = infoStats.text + "Damage= "+damage+" \n";
+        infoStats.text = "\n" + infoStats.text + "Nivel= " + nivel + " \n";
+        damage = nivel + sumatorio + goldcount / 3;
+        infoStats.text = infoStats.text + "Damage= " + damage + " \n";
 
-        infoStats.text = infoStats.text + "Gold Points= " + goldcount/3 + " \n";
+        infoStats.text = infoStats.text + "Gold Points= " + goldcount / 3 + " \n";
 
         PV.RPC("RPC_UpdateInfo", RpcTarget.AllBuffered, infoStats.text);
 
@@ -162,7 +162,7 @@ public class Inventario : MonoBehaviour
     {
         if (!PV.IsMine) return;
         nivel++;
-        PV.RPC("RPC_UpdateNivel",RpcTarget.AllBuffered,nivel);
+        PV.RPC("RPC_UpdateNivel", RpcTarget.AllBuffered, nivel);
     }
     [PunRPC]
     public void RPC_UpdateNivel(int nivel)
@@ -177,43 +177,44 @@ public class Inventario : MonoBehaviour
     {
         if (PhotonNetwork.InRoom)
         {
-            Application.Quit(); 
+            Application.Quit();
         }
     }
-    void InventarioActivacion() {
-        
-            if (Input.GetKeyDown(KeyCode.E) && esc == false)
-            {
-                inventarioActivo = !inventarioActivo;
-            }
-            if (inventarioActivo == true)
-            {
-                inventario.SetActive(true);
-                Cursor.visible = true;
-            }
-            if (inventarioActivo == false)
-            {
-                inventario.SetActive(false);
-                Cursor.visible = false;
-            }
-            if (Input.GetKeyDown(KeyCode.Escape))
-            {
-                esc = !esc;
-            }
-            if (esc == true)
-            {
-                exitmenu.SetActive(true);
+    void InventarioActivacion()
+    {
 
-            }
-            if (esc == false)
-            {
-                exitmenu.SetActive(false);
-            }
-        
+        if (Input.GetKeyDown(KeyCode.E) && esc == false)
+        {
+            inventarioActivo = !inventarioActivo;
+        }
+        if (inventarioActivo == true)
+        {
+            inventario.SetActive(true);
+            Cursor.visible = true;
+        }
+        if (inventarioActivo == false)
+        {
+            inventario.SetActive(false);
+            Cursor.visible = false;
+        }
+        if (Input.GetKeyDown(KeyCode.Escape))
+        {
+            esc = !esc;
+        }
+        if (esc == true)
+        {
+            exitmenu.SetActive(true);
+
+        }
+        if (esc == false)
+        {
+            exitmenu.SetActive(false);
+        }
+
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag=="Item")
+        if (other.tag == "Item")
         {
             if (PV.IsMine)
             {
@@ -226,11 +227,11 @@ public class Inventario : MonoBehaviour
             {
                 Destroy(other.gameObject);
             }
-                
-            
-            
+
+
+
         }
-        if (other.tag=="Enemy")
+        if (other.tag == "Enemy")
         {
             if (PV.IsMine)
             {
@@ -262,7 +263,7 @@ public class Inventario : MonoBehaviour
                 }
             }
         }
-        
+
     }
 
     [PunRPC]
@@ -317,7 +318,7 @@ public class Inventario : MonoBehaviour
     public void SumGold(int price)
     {
         goldcount += price;
-        PV.RPC("RPC_UpdateGoldTxt",RpcTarget.All,goldcount);
+        PV.RPC("RPC_UpdateGoldTxt", RpcTarget.All, goldcount);
         ContarStats();
     }
     [PunRPC]

@@ -89,12 +89,13 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         sum = sumIn;
         empty = false;
 
-        if (PV.IsMine)
+        UpdateSlot();
+        /*if (PV.IsMine)
         {
             PV.RPC("RPC_EquipItem", RpcTarget.All, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
-        }
+        }*/
     }
-    [PunRPC]
+    /*[PunRPC]
     private void RPC_EquipItem(int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
         Id = IdIn;
@@ -105,7 +106,7 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         sum = sumIn;
         empty = false;
         UpdateSlot();
-    }
+    }*/
     public void UnequipItem()
     {
         empty = true;
@@ -118,12 +119,12 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         SlotIconGameObject.GetComponent<Image>().sprite = Background;
         price = 0;
         sum = 0;
-        if (PV.IsMine)
+        /*if (PV.IsMine)
         {
             PV.RPC("RPC_UnequipItem", RpcTarget.All);
-        }
+        }*/
     }
-    [PunRPC]
+    /*[PunRPC]
     public void RPC_UnequipItem()
     {
         empty = true;
@@ -137,7 +138,7 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         price = 0;
         sum = 0;
     }
-
+    */
 
 
     void usar() 
