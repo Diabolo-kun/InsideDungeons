@@ -10,7 +10,6 @@ public class RoomBehaviour : MonoBehaviourPunCallbacks
 {
     private PhotonView PV;
     private PhotonView currentplayerPV;
-    public Inventario inv;
 
     public PhotonPlayer[] players; //Lista de jugadores
     private int currentPlayerIndex = 0; //Indice del jugador actual
@@ -31,6 +30,7 @@ public class RoomBehaviour : MonoBehaviourPunCallbacks
     public Text winnerNameText;
 
     public bool isBlocked;
+    public bool getItem = false;
 
 
     void Start()
@@ -41,18 +41,17 @@ public class RoomBehaviour : MonoBehaviourPunCallbacks
         ShufflePlayers();//Reordenar la lista de jugadores
         currentPlayer = players[currentPlayerIndex];//Asignar el primer jugador en la lista como el jugador actual
         blockedArea.SetActive(true);//Bloquear la zona al iniciar el juego
-        InvokeRepeating("NextTurn", 0f, 30f);
+        InvokeRepeating("NextTurn",0f,30f);
     }
     private void Update()
     {
-        CheckWinCondition();
     }
 
     //Función para el siguiente turno
     public void NextTurn()
     {
         if (!PhotonNetwork.IsMasterClient) return;
-        Teleport(currentPlayer);
+        PV.RPC("Teleport", RpcTarget.All);
 
 
         currentPlayerIndex++;//Incrementar el indice del jugador actual
@@ -65,17 +64,15 @@ public class RoomBehaviour : MonoBehaviourPunCallbacks
 
         GameObject playerGo = PhotonNetwork.GetPhotonView(currentPlayer.ActorNumber).gameObject;//comparar si el jugador esta vivo para saltar su turno
         currentplayerPV = playerGo.GetComponent<PhotonView>();
-        Inventario inv = playerGo.GetComponent<Inventario>();
-        if (inv != null && !inv.alive)
+        Stat stat = playerGo.GetComponent<Stat>();
+        if (stat != null && !stat.alive)
         {
             NextTurn();
             return;
         }
-        blockedArea.SetActive(true);
         PV.RPC("BlockedArea", RpcTarget.All, currentPlayer.ActorNumber);//Bloquear la zona para el siguiente jugador
 
         PV.RPC("UpdateTurnText", RpcTarget.All, currentPlayer.NickName);
-        hasInteract = false;
        
     }
     [PunRPC]
@@ -86,26 +83,30 @@ public class RoomBehaviour : MonoBehaviourPunCallbacks
         {
             blockedArea.SetActive(false);
         }
+        else
+        {
+            blockedArea.SetActive(true);
+        }
 
     }
     [PunRPC]
     void UpdateTurnText(string playerName)
     {
         cartelTurno.text = "Turno de :" + playerName;
+        hasInteract = false;
     }
 
     [PunRPC]
-    private void Teleport(PhotonPlayer player)
+    private void Teleport()
     {
-        if (player!=null)
+        GameObject[] playerObjects = GameObject.FindGameObjectsWithTag("Player");
+
+        foreach (GameObject player in playerObjects)
         {
-            Vector3 teleportDestination = new Vector3(UnityEngine.Random.Range(10, 20), 0f, UnityEngine.Random.Range(20, 25));
-            if (PhotonNetwork.LocalPlayer.ActorNumber == player.ActorNumber)
-            {
-                transform.position = teleportDestination;
-            }
+            Vector3 newPosition = new Vector3(UnityEngine.Random.Range(10f, 20f), 0f, UnityEngine.Random.Range(20f, 25f));
+            player.transform.position = newPosition;
         }
-        
+
     }
     [PunRPC]
     private void SyncPlayerList(int currentPlayerIndex, PhotonPlayer[] players)
@@ -166,50 +167,7 @@ public class RoomBehaviour : MonoBehaviourPunCallbacks
             }
         } 
     }
-    [PunRPC]
-    public void CheckWinCondition()
-    {
-        //if (players == null) return;
-        int alivePlayers = 0;
-        int winnerPlayer = 0;
-
-        for (int i = 0; i < players.Length; i++)
-        {
-            //if (players[i]!=null) continue;
-
-            GameObject playerGo = PhotonNetwork.GetPhotonView(players[i].ActorNumber).gameObject;
-            if (playerGo!= null) continue;
-            Inventario inv = playerGo.GetComponent<Inventario>();
-            if (inv != null) continue;
-            if (inv.alive)
-            {
-                alivePlayers++;
-                winnerPlayer = i;
-            }
-            if (inv.damage >= 15)
-            {
-                winnerPlayer = i;
-                Win(winnerPlayer);
-                return;
-            }
-            
-            
-        }
-
-        if (alivePlayers == 1)
-        {
-            PV.RPC("Win", RpcTarget.All, winnerPlayer);
-        }
-    }
-
-    [PunRPC]
-    public void Win(int winnerPlayer)
-    {
-        PhotonPlayer winnerplayer = players[winnerPlayer];
-        winnerNameText.text = "Ganador: " + winnerplayer.NickName;
-        winPanel.SetActive(true);
-        inv.win= true;
-    }
+    
     public void CloseApp()
     {
         Application.Quit();

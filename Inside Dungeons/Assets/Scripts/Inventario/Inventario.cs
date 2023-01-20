@@ -12,6 +12,7 @@ public class Inventario : MonoBehaviour
 
     public GameObject inventario;
     public PhotonView PV;
+    public RoomBehaviour rb;
 
     private int allSlots = 7;
     private Slot[] slots;
@@ -21,7 +22,7 @@ public class Inventario : MonoBehaviour
     private Slot[] slotBody;
     public GameObject slotHolderBody;
 
-    public int goldcount;
+    public int goldcount=0;
     public Text goldtxt;
 
     public Slot slotCabeza;
@@ -39,10 +40,8 @@ public class Inventario : MonoBehaviour
     public Slot slotseis;
     public Slot slotsiete;
 
-    public bool alive = true;
+    public Stat stat;
     public Text infoStats;
-    public int damage = 1;
-    public int nivel = 1;
     public int sumatorio;
 
     private bool esc = false;
@@ -50,7 +49,6 @@ public class Inventario : MonoBehaviour
     public Button btnexit;
 
     public bool win = false;
-    public SpriteDataBase SpriteDB;
 
 
     void Start()
@@ -59,7 +57,8 @@ public class Inventario : MonoBehaviour
         exitmenu.SetActive(false);
         btnexit.onClick.AddListener(Salir);
         PV = GetComponent<PhotonView>();
-        SpriteDB = new SpriteDataBase();
+        stat = GetComponent<Stat>();
+        rb = GameObject.FindObjectOfType<RoomBehaviour>();
 
         inventario.SetActive(false);
         goldcount = 0;
@@ -86,14 +85,12 @@ public class Inventario : MonoBehaviour
         {
 
             slots[i].empty = true;
-            slots[i].SyncSlot = -1;
 
 
         }
         for (int i = 0; i < slotBody.Length; i++)
         {
             slotBody[i].empty = true;
-            slotBody[i].SyncSlot = -1;
         }
         ContarStats();
 
@@ -141,36 +138,13 @@ public class Inventario : MonoBehaviour
         {
             infoStats.text = "Nada equipado \n";
         }
-        infoStats.text = "\n" + infoStats.text + "Nivel= " + nivel + " \n";
-        damage = nivel + sumatorio + goldcount / 3;
-        infoStats.text = infoStats.text + "Damage= " + damage + " \n";
+        infoStats.text = "\n" + infoStats.text + "Nivel= " + stat.nivel + " \n";
+        stat.damage = stat.nivel + sumatorio + goldcount / 3;
+        infoStats.text = infoStats.text + "Damage= " + stat.damage + " \n";
 
         infoStats.text = infoStats.text + "Gold Points= " + goldcount / 3 + " \n";
 
-        PV.RPC("RPC_UpdateInfo", RpcTarget.AllBuffered, infoStats.text);
 
-    }
-    [PunRPC]
-    public void RPC_UpdateInfo(string info)
-    {
-        if (PV.IsMine)
-        {
-            infoStats.text = info;
-        }
-    }
-    public void NivelUp()
-    {
-        if (!PV.IsMine) return;
-        nivel++;
-        PV.RPC("RPC_UpdateNivel", RpcTarget.AllBuffered, nivel);
-    }
-    [PunRPC]
-    public void RPC_UpdateNivel(int nivel)
-    {
-        if (PV.IsMine)
-        {
-            this.nivel = nivel;
-        }
     }
 
     void Salir()
@@ -190,12 +164,10 @@ public class Inventario : MonoBehaviour
         if (inventarioActivo == true)
         {
             inventario.SetActive(true);
-            Cursor.visible = true;
         }
         if (inventarioActivo == false)
         {
             inventario.SetActive(false);
-            Cursor.visible = false;
         }
         if (Input.GetKeyDown(KeyCode.Escape))
         {
@@ -214,84 +186,51 @@ public class Inventario : MonoBehaviour
     }
     private void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Item")
+        if (PV.IsMine)
         {
-            if (PV.IsMine)
+            if (other.tag == "Item")
             {
                 GameObject itemPickedUp = other.gameObject;
                 Item item = itemPickedUp.GetComponent<Item>();
-                AddToInventory(item);
-                Destroy(itemPickedUp);
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    if (slots[i].empty)
+                    {
+                        //rb.getItem = true;
+                        slots[i].EquipItem(item.Id, item.type, item.description, item.icon, item.price, item.sum);
+                        slots[i].GetComponent<Slot>().UpdateSlot();
+                        Destroy(itemPickedUp);
+                        break;
+                    }
+                }
             }
-            else
-            {
-                Destroy(other.gameObject);
-            }
-
-
-
-        }
-        if (other.tag == "Enemy")
-        {
-            if (PV.IsMine)
+            if (other.tag == "Enemy")
             {
                 GameObject enemy = other.gameObject;
                 int hp = enemy.GetComponent<Enemy>().Hp;
-                if (damage > hp) { NivelUp(); Destroy(enemy); } else { alive = false; Destroy(enemy); }
-            }
-            else
-            {
-                Destroy(other.gameObject);
+                if (stat.damage > hp) { stat.NivelUp(); Destroy(enemy); } else { stat.alive = false; Destroy(enemy); }
             }
         }
-    }
-    [PunRPC]
-    public void AddToInventory(Item item)
-    {
-        Debug.Log(item);
-        if (PV.IsMine)
+        else if (other.tag != "Interactuable")
         {
-            for (int i = 0; i < slots.Length; i++)
-            {
-                if (slots[i].empty)
-                {
-
-                    Sprite icon = SpriteDB.getSpriteByID(item.Id);
-                    slots[i].EquipItem(item.Id, item.type, item.description, icon, item.price, item.sum);
-                    slots[i].GetComponent<Slot>().UpdateSlot();
-                    break;
-                }
-            }
+            Destroy(other.gameObject);
         }
-
     }
-
-    [PunRPC]
-    public void RPC_EquipItem(int slotIndex, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
-    {
-        slotBody[slotIndex].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
-        slotBody[slotIndex].GetComponent<Slot>().UpdateSlot();
-        ContarStats();
-    }
-
     public void EquipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
-        if (!PV.IsMine) return;
-
         for (int i = 0; i < slotBody.Length; i++)
         {
             if (slotBody[i].empty && slotBody[i].type == typeIn)
             {
+                slotBody[i].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
+                slotBody[i].GetComponent<Slot>().UpdateSlot();
+                ContarStats();
                 slot.UnequipItem();
-
-                PV.RPC("RPC_EquipItem", RpcTarget.All, i, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
                 break;
             }
         }
     }
-
-    [PunRPC]
-    public void RPC_DesequipItem(int slotIndex, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
+    public void DesequipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
         for (int i = 0; i < slots.Length; i++)
         {
@@ -300,32 +239,23 @@ public class Inventario : MonoBehaviour
                 slots[i].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
                 slots[i].GetComponent<Slot>().UpdateSlot();
                 ContarStats();
+                slot.UnequipItem();
                 break;
             }
         }
     }
 
-    public void DesequipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
+
+    public void SumGold(Slot slot)
     {
-        if (!PV.IsMine) return;
-
-        PV.RPC("RPC_DesequipItem", RpcTarget.All, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
-
-        slot.UnequipItem();
-    }
-
-
-    public void SumGold(int price)
-    {
-        goldcount += price;
-        PV.RPC("RPC_UpdateGoldTxt", RpcTarget.All, goldcount);
-        ContarStats();
-    }
-    [PunRPC]
-    public void RPC_UpdateGoldCount(int newGoldCount)
-    {
-        goldcount = newGoldCount;
-        UpdateGoldTxt();
+        if (slot!=null)
+        {
+            goldcount = goldcount + slot.price;
+            UpdateGoldTxt();
+            ContarStats();
+            slot.UnequipItem();
+        }
+        
     }
     public void UpdateGoldTxt()
     {
