@@ -47,6 +47,10 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
             btnDontUse.onClick.AddListener(noUsar);
 
         }
+        if (!empty)
+        {
+            UnequipItem();
+        }
     }
     public void UpdateSlot()
     {

@@ -25,7 +25,7 @@ public class PlayerManager : MonoBehaviour
 
     void InstantiateCharacter()
     {
-        Vector3 randomPosition = new Vector3(Random.Range(10, 20), 0, Random.Range(20, 25));
+        Vector3 randomPosition = new Vector3(Random.Range(-7, 7), 5.1f, Random.Range(19, 21));
         Quaternion randomRotation = Quaternion.Euler(0, Random.Range(0, 360), 0);
 
         GameObject character = PhotonNetwork.Instantiate(Path.Combine("PhotonPrefab", "shadow"), randomPosition, randomRotation);
