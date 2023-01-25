@@ -12,6 +12,8 @@ public class Inventario : MonoBehaviour
 
     public GameObject inventario;
     public PhotonView PV;
+    public RoomBehaviour rb;
+    public PhotonView PVroom;
 
     private int allSlots = 7;
     private Slot[] slots;
@@ -21,7 +23,7 @@ public class Inventario : MonoBehaviour
     private Slot[] slotBody;
     public GameObject slotHolderBody;
 
-    public int goldcount;
+    public int goldcount=0;
     public Text goldtxt;
 
     public Slot slotCabeza;
@@ -39,18 +41,15 @@ public class Inventario : MonoBehaviour
     public Slot slotseis;
     public Slot slotsiete;
 
-    public bool alive = true;
+    public Stat stat;
     public Text infoStats;
-    public int damage = 1;
-    public int nivel = 1;
     public int sumatorio;
 
     private bool esc = false;
     public GameObject exitmenu;
     public Button btnexit;
 
-    public bool win = false;
-    public SpriteDataBase SpriteDB;
+    public bool win;
 
 
     void Start()
@@ -59,7 +58,9 @@ public class Inventario : MonoBehaviour
         exitmenu.SetActive(false);
         btnexit.onClick.AddListener(Salir);
         PV = GetComponent<PhotonView>();
-        SpriteDB = new SpriteDataBase();
+        stat = GetComponent<Stat>();
+        rb = GameObject.FindObjectOfType<RoomBehaviour>();
+        PVroom= rb.GetComponent<PhotonView>();
 
         inventario.SetActive(false);
         goldcount = 0;
@@ -82,19 +83,6 @@ public class Inventario : MonoBehaviour
         slotBody[4] = slotManoIz;
         slotBody[5] = slotManoDe;
 
-        for (int i = 0; i < slots.Length; i++)
-        {
-
-            slots[i].empty = true;
-            slots[i].SyncSlot = -1;
-
-
-        }
-        for (int i = 0; i < slotBody.Length; i++)
-        {
-            slotBody[i].empty = true;
-            slotBody[i].SyncSlot = -1;
-        }
         ContarStats();
 
     }
@@ -137,42 +125,20 @@ public class Inventario : MonoBehaviour
             sumatorio = sumatorio + slotBody[5].sum;
             infoStats.text = infoStats.text + "Rigt arm= +" + slotBody[5].sum + "\n";
         }
-        if (slotBody[0].empty = false && slotBody[1].empty == false && slotBody[2].empty == false && slotBody[3].empty == false && slotBody[4].empty == false && slotBody[5].empty == false)
+        if (sumatorio == 0)
         {
             infoStats.text = "Nada equipado \n";
         }
-        infoStats.text = "\n" + infoStats.text + "Nivel= " + nivel + " \n";
-        damage = nivel + sumatorio + goldcount / 3;
-        infoStats.text = infoStats.text + "Damage= " + damage + " \n";
+        infoStats.text = "\n" + infoStats.text + "Nivel= " + stat.nivel + " \n";
+        stat.damage = stat.nivel + sumatorio + goldcount / 3;
+        infoStats.text = infoStats.text + "Damage= " + stat.damage + " \n";
 
         infoStats.text = infoStats.text + "Gold Points= " + goldcount / 3 + " \n";
 
-        PV.RPC("RPC_UpdateInfo", RpcTarget.AllBuffered, infoStats.text);
+        stat.UpdateStats();
+
 
     }
-    [PunRPC]
-    public void RPC_UpdateInfo(string info)
-    {
-        if (PV.IsMine)
-        {
-            infoStats.text = info;
-        }
-    }
-    public void NivelUp()
-    {
-        if (!PV.IsMine) return;
-        nivel++;
-        PV.RPC("RPC_UpdateNivel", RpcTarget.AllBuffered, nivel);
-    }
-    [PunRPC]
-    public void RPC_UpdateNivel(int nivel)
-    {
-        if (PV.IsMine)
-        {
-            this.nivel = nivel;
-        }
-    }
-
     void Salir()
     {
         if (PhotonNetwork.InRoom)
@@ -183,115 +149,90 @@ public class Inventario : MonoBehaviour
     void InventarioActivacion()
     {
 
-        if (Input.GetKeyDown(KeyCode.E) && esc == false)
+        if (Input.GetKeyDown(KeyCode.E) && !esc && !win)
         {
             inventarioActivo = !inventarioActivo;
+            inventario.SetActive(inventarioActivo);
         }
-        if (inventarioActivo == true)
-        {
-            inventario.SetActive(true);
-            Cursor.visible = true;
-        }
-        if (inventarioActivo == false)
-        {
-            inventario.SetActive(false);
-            Cursor.visible = false;
-        }
-        if (Input.GetKeyDown(KeyCode.Escape))
+        else if (Input.GetKeyDown(KeyCode.Escape) && !win)
         {
             esc = !esc;
+            exitmenu.SetActive(esc);
         }
-        if (esc == true)
+        if (win)
         {
-            exitmenu.SetActive(true);
-
-        }
-        if (esc == false)
-        {
+            inventario.SetActive(false);
             exitmenu.SetActive(false);
+        }
+        if (!inventarioActivo && !esc && !win)
+        {
+            Cursor.visible = false;
+        }
+        else
+        {
+            Cursor.visible = true;
         }
 
     }
-    private void OnTriggerEnter(Collider other)
+    public void OnTriggerEnter(Collider other)
     {
-        if (other.tag == "Item")
+        if (PV.IsMine)
         {
-            if (PV.IsMine)
+            if (other.tag == "Item")
             {
                 GameObject itemPickedUp = other.gameObject;
                 Item item = itemPickedUp.GetComponent<Item>();
-                AddToInventory(item);
-                Destroy(itemPickedUp);
+                for (int i = 0; i < slots.Length; i++)
+                {
+                    if (slots[i].empty)
+                    {
+                        slots[i].EquipItem(item.Id, item.type, item.description, item.icon, item.price, item.sum);
+                        slots[i].GetComponent<Slot>().UpdateSlot();
+                        Destroy(itemPickedUp);
+                        rb.Next();
+                        break;
+                    }
+                }
             }
-            else
-            {
-                Destroy(other.gameObject);
-            }
-
-
-
-        }
-        if (other.tag == "Enemy")
-        {
-            if (PV.IsMine)
+            if (other.tag == "Enemy")
             {
                 GameObject enemy = other.gameObject;
                 int hp = enemy.GetComponent<Enemy>().Hp;
-                if (damage > hp) { NivelUp(); Destroy(enemy); } else { alive = false; Destroy(enemy); }
-            }
-            else
-            {
-                Destroy(other.gameObject);
-            }
-        }
-    }
-    [PunRPC]
-    public void AddToInventory(Item item)
-    {
-        Debug.Log(item);
-        if (PV.IsMine)
-        {
-            for (int i = 0; i < slots.Length; i++)
-            {
-                if (slots[i].empty)
-                {
-
-                    Sprite icon = SpriteDB.getSpriteByID(item.Id);
-                    slots[i].EquipItem(item.Id, item.type, item.description, icon, item.price, item.sum);
-                    slots[i].GetComponent<Slot>().UpdateSlot();
-                    break;
+                if (stat.damage >= hp)
+                { 
+                    stat.NivelUp();
+                    ContarStats();
+                } else 
+                { 
+                    stat.alive = false;
+                    stat.UpdateStats();
                 }
+                PVroom.RPC("ReciveOrderCheckWin", RpcTarget.All);
+                Destroy(enemy);
+                rb.Next();
             }
         }
-
+        else if (other.tag != "Interactuable")
+        {
+            Destroy(other.gameObject);
+        }
     }
-
-    [PunRPC]
-    public void RPC_EquipItem(int slotIndex, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
-    {
-        slotBody[slotIndex].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
-        slotBody[slotIndex].GetComponent<Slot>().UpdateSlot();
-        ContarStats();
-    }
-
     public void EquipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
-        if (!PV.IsMine) return;
-
         for (int i = 0; i < slotBody.Length; i++)
         {
             if (slotBody[i].empty && slotBody[i].type == typeIn)
             {
+                slotBody[i].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
+                slotBody[i].GetComponent<Slot>().UpdateSlot();
                 slot.UnequipItem();
-
-                PV.RPC("RPC_EquipItem", RpcTarget.All, i, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
                 break;
             }
         }
+        PVroom.RPC("ReciveOrderCheckWin", RpcTarget.All);
+        ContarStats();
     }
-
-    [PunRPC]
-    public void RPC_DesequipItem(int slotIndex, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
+    public void DesequipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
     {
         for (int i = 0; i < slots.Length; i++)
         {
@@ -299,37 +240,35 @@ public class Inventario : MonoBehaviour
             {
                 slots[i].EquipItem(IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
                 slots[i].GetComponent<Slot>().UpdateSlot();
-                ContarStats();
+                slot.UnequipItem();
                 break;
             }
         }
-    }
-
-    public void DesequipItem(Slot slot, int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
-    {
-        if (!PV.IsMine) return;
-
-        PV.RPC("RPC_DesequipItem", RpcTarget.All, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
-
-        slot.UnequipItem();
-    }
-
-
-    public void SumGold(int price)
-    {
-        goldcount += price;
-        PV.RPC("RPC_UpdateGoldTxt", RpcTarget.All, goldcount);
+        PVroom.RPC("ReciveOrderCheckWin", RpcTarget.All);
         ContarStats();
     }
-    [PunRPC]
-    public void RPC_UpdateGoldCount(int newGoldCount)
+    public void SumGold(Slot slot)
     {
-        goldcount = newGoldCount;
-        UpdateGoldTxt();
+        if (slot!=null)
+        {
+            goldcount = goldcount + slot.price;
+            UpdateGoldTxt();
+            ContarStats();
+            slot.UnequipItem();
+        }
+        
     }
     public void UpdateGoldTxt()
     {
         goldtxt.text = goldcount.ToString();
     }
-
+    public void CallWin()
+    {
+        PV.RPC("ChangeWin", RpcTarget.All);
+    }
+    [PunRPC]
+    public void ChangeWin()
+    {
+        win = true;
+    }
 }

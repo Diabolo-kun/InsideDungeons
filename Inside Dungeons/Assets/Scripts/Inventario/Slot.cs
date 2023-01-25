@@ -47,6 +47,10 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
             btnDontUse.onClick.AddListener(noUsar);
 
         }
+        if (!empty)
+        {
+            UnequipItem();
+        }
     }
     public void UpdateSlot()
     {
@@ -90,23 +94,7 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         empty = false;
 
         UpdateSlot();
-        /*if (PV.IsMine)
-        {
-            PV.RPC("RPC_EquipItem", RpcTarget.All, IdIn, typeIn, descripIn, iconIn, priceIn, sumIn);
-        }*/
     }
-    /*[PunRPC]
-    private void RPC_EquipItem(int IdIn, string typeIn, string descripIn, Sprite iconIn, int priceIn, int sumIn)
-    {
-        Id = IdIn;
-        type = typeIn;
-        description = descripIn;
-        icon = iconIn;
-        price = priceIn;
-        sum = sumIn;
-        empty = false;
-        UpdateSlot();
-    }*/
     public void UnequipItem()
     {
         empty = true;
@@ -119,26 +107,7 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
         SlotIconGameObject.GetComponent<Image>().sprite = Background;
         price = 0;
         sum = 0;
-        /*if (PV.IsMine)
-        {
-            PV.RPC("RPC_UnequipItem", RpcTarget.All);
-        }*/
     }
-    /*[PunRPC]
-    public void RPC_UnequipItem()
-    {
-        empty = true;
-        Id = 0;
-        if (!body)
-        {
-            type = null;
-        }
-        description = null;
-        SlotIconGameObject.GetComponent<Image>().sprite = Background;
-        price = 0;
-        sum = 0;
-    }
-    */
 
 
     void usar() 
@@ -152,9 +121,7 @@ public class Slot : MonoBehaviour, IPointerClickHandler, IPointerExitHandler
     void vender() {
 
         Slot slot = GetComponentInParent<Slot>();
-        int price= slot.price;
-        slot.inventario.SumGold(price);
-        slot.UnequipItem();
+        inventario.SumGold(slot);
         btnUse.gameObject.SetActive(false);
         btnSale.gameObject.SetActive(false);
     }
